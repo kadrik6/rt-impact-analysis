@@ -1,0 +1,21 @@
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# OS
+.DS_Store
+Thumbs.db
