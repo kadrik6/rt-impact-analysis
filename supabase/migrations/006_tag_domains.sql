@@ -1,0 +1,26 @@
+-- One-time domain tagging for all ingested chunks
+UPDATE legal_chunks SET domain = CASE
+  WHEN act_title ILIKE '%hasartmäng%'                                    THEN 'hasartmang'
+  WHEN act_title ILIKE '%käibemaks%'                                     THEN 'kaibemaks'
+  WHEN act_title ILIKE '%tulumaks%'                                      THEN 'tulumaks'
+  WHEN act_title ILIKE '%aktsiis%'                                       THEN 'aktsiis'
+  WHEN act_title ILIKE '%töölepingu%' OR act_title ILIKE '%töösuhe%'     THEN 'tooigus'
+  WHEN act_title ILIKE '%sotsiaalhoolekande%' OR act_title ILIKE '%pension%' THEN 'sotsiaaloigus'
+  WHEN act_title ILIKE '%andmekaitse%' OR act_title ILIKE '%isikuandme%' THEN 'andmekaitse'
+  WHEN act_title ILIKE '%kaitseväe%' OR act_title ILIKE '%riigikaitse%'  THEN 'riigikaitse'
+  WHEN act_title ILIKE '%kriminaal%' OR act_title ILIKE '%väärteo%'      THEN 'kriminaalmenetus'
+  WHEN act_title ILIKE '%riigieelarve%' OR act_title ILIKE '%maksukorraldus%' THEN 'rahandus'
+  WHEN act_title ILIKE '%hange%' OR act_title ILIKE '%riigihange%'       THEN 'riigihanked'
+  WHEN act_title ILIKE '%ehitus%' OR act_title ILIKE '%planeeri%'        THEN 'ehitus'
+  WHEN act_title ILIKE '%keskkond%' OR act_title ILIKE '%looduskaitse%'  THEN 'keskkond'
+  WHEN act_title ILIKE '%haridus%' OR act_title ILIKE '%ülikool%'        THEN 'haridus'
+  WHEN act_title ILIKE '%politsei%' OR act_title ILIKE '%piirivalve%'    THEN 'siseturvalisus'
+  WHEN act_title ILIKE '%äriseadustik%' OR act_title ILIKE '%äriühingu%' THEN 'ariigus'
+  WHEN ministry_owner = 'Sotsiaalministeerium'                            THEN 'sotsiaaloigus'
+  WHEN ministry_owner = 'Rahandusministeerium'                            THEN 'rahandus'
+  WHEN ministry_owner = 'Kaitseministeerium'                              THEN 'riigikaitse'
+  WHEN ministry_owner = 'Kliimaministeerium'                              THEN 'keskkond'
+  WHEN ministry_owner = 'Haridus- ja Teadusministeerium'                  THEN 'haridus'
+  ELSE 'muu'
+END
+WHERE domain IS NULL;
