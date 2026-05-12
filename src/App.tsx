@@ -333,7 +333,7 @@ export default function App() {
                   mode === "auto" ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
                 }`}
               >
-                Automaatne otsing
+                Agentne kontroll
               </button>
               <button
                 onClick={() => switchMode("advanced")}
