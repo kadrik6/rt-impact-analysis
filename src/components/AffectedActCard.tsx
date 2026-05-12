@@ -111,8 +111,19 @@ export function AffectedActCard({ act, onConfirm, onFlag }: Props) {
               <span className="rounded bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500">
                 {IMPACT_LABELS[act.impact_type]}
               </span>
-              <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                {Math.round(act.confidence * 100)}% kattuvus
+              <span className="flex items-center gap-2">
+                <span className="relative h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100">
+                  <span
+                    className={`absolute inset-y-0 left-0 rounded-full ${
+                      act.directly_amended ? "bg-emerald-500"
+                      : act.confidence >= 0.65 ? "bg-orange-400"
+                      : act.confidence >= 0.38 ? "bg-amber-400"
+                      : "bg-neutral-300"
+                    }`}
+                    style={{ width: `${Math.round(act.confidence * 100)}%` }}
+                  />
+                </span>
+                <span className="font-mono text-[11px] text-neutral-400">{Math.round(act.confidence * 100)}%</span>
                 <Tooltip text="Kattuvus näitab, kui palju sarnaseid sõnu ja teemasid tekstides leidub. See ei tähenda, et vastuolu on olemas — see tähendab, et seos vajab inimese ülevaatust." />
               </span>
             </div>

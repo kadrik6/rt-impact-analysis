@@ -25,13 +25,13 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
 
         {/* Header */}
         <div className="border-b border-neutral-100 px-6 pt-6 pb-4">
-          <h2 className="text-lg font-bold text-neutral-900">Tere tulemast rt-impact'i</h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            Kirjelda kavandatavat muudatust — tööriist otsib, milliseid kehtivaid õigusakte see
-            võib puudutada.
+          <h2 className="text-xl font-bold text-neutral-900">Sinu autonoomne õigusnõunik</h2>
+          <p className="mt-1 text-sm font-medium text-neutral-500">
+            Analüüsi eelnõusid 80 000+ paragrahvi vastu sekunditega, mitte tundidega.
           </p>
           <p className="mt-2 text-xs text-neutral-400">
-            Tulemus ei ole lõplik õiguslik hinnang. Kõik leitud seosed vajavad inimese ülevaatust.
+            Kirjelda kavandatavat muudatust — süsteem tuvastab mõjutatud aktid, vastutavad
+            ministeeriumid ja konkreetsed paragrahvid automaatselt.
           </p>
         </div>
 

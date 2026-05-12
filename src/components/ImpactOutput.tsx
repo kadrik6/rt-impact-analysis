@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import type { ImpactAnalysis } from "@/types";
+import React, { useState, useEffect } from "react";
+import type { ImpactAnalysis, AffectedAct } from "@/types";
 import type { ExcludedAct } from "@/lib/feedback";
 import { AffectedActCard } from "./AffectedActCard";
 import { Tooltip } from "./Tooltip";
@@ -14,6 +14,119 @@ interface Props {
   onClearExclusion?: (rt_identifier: string) => void;
   onClearAllExclusions?: () => void;
   onGenerateReport?: () => Promise<string>;
+  draftTitle?: string;
+}
+
+const LOG_MESSAGES = [
+  "Tokeniseerin eelnõu teksti...",
+  "Skaneerin õigusakti kataloogi...",
+  "Arvutan märksõnade ühisosa...",
+  "Filtreerin üldterminid välja...",
+  "Hindan domeeni ankursõnu...",
+  "Kaalun paragrahvide kattuvust...",
+  "Tuvastан ministeeriumid...",
+  "Koostan lõplikku tulemust...",
+];
+
+function nodeColor(act: AffectedAct): string {
+  if (act.directly_amended) return "#059669";
+  if (act.confidence >= 0.65) return "#f97316";
+  if (act.confidence >= 0.38) return "#f59e0b";
+  return "#9ca3af";
+}
+
+function nodeFill(act: AffectedAct): string {
+  if (act.directly_amended) return "#ecfdf5";
+  if (act.confidence >= 0.65) return "#fff7ed";
+  if (act.confidence >= 0.38) return "#fffbeb";
+  return "#f9fafb";
+}
+
+function ImpactGraph({ acts, draftTitle }: { acts: AffectedAct[]; draftTitle?: string }) {
+  const active = acts.filter((a) => a.confirmed !== false);
+  if (active.length === 0) return null;
+
+  const W = 640;
+  const H = 400;
+  const cx = W / 2;
+  const cy = H / 2 - 10;
+  const r = Math.min(170, 60 + active.length * 14);
+
+  return (
+    <div className="rounded-md border border-neutral-200 bg-white p-4">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: "340px" }}>
+        {/* Spoke lines */}
+        {active.map((act, i) => {
+          const angle = (i / active.length) * 2 * Math.PI - Math.PI / 2;
+          const x = cx + r * Math.cos(angle);
+          const y = cy + r * Math.sin(angle);
+          return (
+            <line
+              key={`l${i}`}
+              x1={cx} y1={cy} x2={x} y2={y}
+              stroke={nodeColor(act)}
+              strokeWidth={1.5}
+              strokeOpacity={0.4}
+              strokeDasharray={act.confidence < 0.38 ? "4 3" : undefined}
+            />
+          );
+        })}
+
+        {/* Act nodes */}
+        {active.map((act, i) => {
+          const angle = (i / active.length) * 2 * Math.PI - Math.PI / 2;
+          const x = cx + r * Math.cos(angle);
+          const y = cy + r * Math.sin(angle);
+          const color = nodeColor(act);
+          const fill = nodeFill(act);
+          return (
+            <g key={`n${i}`}>
+              <circle cx={x} cy={y} r={24} fill={fill} stroke={color} strokeWidth={2}>
+                <title>{act.act_title} — {Math.round(act.confidence * 100)}% kattuvus</title>
+              </circle>
+              <text x={x} y={y - 2} textAnchor="middle" fontSize="11" fontWeight="700" fill={color} fontFamily="monospace">
+                {Math.round(act.confidence * 100)}%
+              </text>
+              <text x={x} y={y + 12} textAnchor="middle" fontSize="9" fill="#9ca3af" fontFamily="monospace">
+                #{i + 1}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Center node */}
+        <circle cx={cx} cy={cy} r={38} fill="#18181b" />
+        <text x={cx} y={cy - 5} textAnchor="middle" fontSize="11" fontWeight="700" fill="white" fontFamily="monospace">
+          eelnõu
+        </text>
+        <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="#71717a" fontFamily="system-ui">
+          {draftTitle ? draftTitle.slice(0, 22) + (draftTitle.length > 22 ? "…" : "") : ""}
+        </text>
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-3 space-y-1.5 border-t border-neutral-100 pt-3">
+        {active.map((act, i) => (
+          <div key={i} className="flex items-baseline gap-2 text-[11px]">
+            <span className="w-5 shrink-0 font-mono text-neutral-400">#{i + 1}</span>
+            <span className="w-9 shrink-0 font-mono font-semibold" style={{ color: nodeColor(act) }}>
+              {Math.round(act.confidence * 100)}%
+            </span>
+            <span className="truncate text-neutral-700">{act.act_title}</span>
+            <span className="shrink-0 font-mono text-[10px] text-neutral-400">{act.rt_identifier}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Color key */}
+      <div className="mt-3 flex flex-wrap gap-4 border-t border-neutral-100 pt-3 text-[11px] text-neutral-500">
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-600" /> Otseselt muudetav</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" /> Kõrge seos</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" /> Keskmine seos</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-full bg-neutral-300" /> Madal seos</span>
+      </div>
+    </div>
+  );
 }
 
 function MarkdownReport({ text }: { text: string }) {
@@ -42,46 +155,38 @@ function MarkdownReport({ text }: { text: string }) {
 
   for (const raw of lines) {
     const line = raw.trimEnd();
-
     if (/^## /.test(line)) {
       flushList();
-      elements.push(
-        <h2 key={key++} className="mb-2 mt-6 text-lg font-bold text-neutral-900 first:mt-0">
-          {line.replace(/^## /, "")}
-        </h2>
-      );
+      elements.push(<h2 key={key++} className="mb-2 mt-6 text-lg font-bold text-neutral-900 first:mt-0">{line.replace(/^## /, "")}</h2>);
     } else if (/^### /.test(line)) {
       flushList();
-      elements.push(
-        <h3 key={key++} className="mb-1 mt-4 text-base font-semibold text-neutral-800">
-          {line.replace(/^### /, "")}
-        </h3>
-      );
+      elements.push(<h3 key={key++} className="mb-1 mt-4 text-base font-semibold text-neutral-800">{line.replace(/^### /, "")}</h3>);
     } else if (/^- /.test(line) || /^\* /.test(line)) {
       listBuffer.push(line.replace(/^[-*] /, ""));
     } else if (line === "") {
       flushList();
     } else {
       flushList();
-      elements.push(
-        <p
-          key={key++}
-          className="my-2 text-sm leading-relaxed text-neutral-700"
-          dangerouslySetInnerHTML={{ __html: renderInline(line) }}
-        />
-      );
+      elements.push(<p key={key++} className="my-2 text-sm leading-relaxed text-neutral-700" dangerouslySetInnerHTML={{ __html: renderInline(line) }} />);
     }
   }
   flushList();
-
   return <div className="prose-sm max-w-none">{elements}</div>;
 }
 
-export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excludedActs, onClearExclusion, onClearAllExclusions, onGenerateReport }: Props) {
+export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excludedActs, onClearExclusion, onClearAllExclusions, onGenerateReport, draftTitle }: Props) {
   const [reportText, setReportText] = useState<string | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [logStep, setLogStep] = useState(0);
+  const [viewMode, setViewMode] = useState<"list" | "graph">("list");
+
+  useEffect(() => {
+    if (!loading) { setLogStep(0); return; }
+    const t = setInterval(() => setLogStep((s) => (s + 1) % LOG_MESSAGES.length), 1100);
+    return () => clearInterval(t);
+  }, [loading]);
 
   const handleGenerateReport = async () => {
     if (!onGenerateReport) return;
@@ -106,11 +211,25 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center text-neutral-400">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-800" />
-          <p className="text-sm">Otsin võimalikke seoseid…</p>
-          <p className="mt-1 text-xs text-neutral-300">See võtab mõne sekundi</p>
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="w-full max-w-sm space-y-4">
+          <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-4 font-mono text-xs">
+            {LOG_MESSAGES.slice(0, logStep + 1).map((msg, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2.5 transition-opacity ${i < logStep ? "opacity-30" : ""}`}
+              >
+                <span className="w-4 shrink-0 text-center">
+                  {i < logStep
+                    ? <span className="text-green-500">✓</span>
+                    : <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-neutral-400 border-t-transparent" />
+                  }
+                </span>
+                <span className={i === logStep ? "text-neutral-800" : "text-neutral-400"}>{msg}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-center font-mono text-[11px] text-neutral-400">Analüüs käib — mõni sekund…</p>
         </div>
       </div>
     );
@@ -187,6 +306,27 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
           </div>
         </div>
 
+        {/* View toggle */}
+        {active.length > 0 && (
+          <div className="flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-neutral-100 p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                viewMode === "list" ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+              }`}
+            >
+              Nimekiri
+            </button>
+            <button
+              onClick={() => setViewMode("graph")}
+              className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                viewMode === "graph" ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+              }`}
+            >
+              Graaf
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Disclaimer ── */}
@@ -200,9 +340,7 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
       {analysis.conflicts_found.length > 0 && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
           <div className="flex items-center gap-1.5 mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-              Kontrolli vajavad seosed
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Kontrolli vajavad seosed</p>
             <Tooltip text="Need on alad, kus tekstiline kattuvus on kõrge ja sisuline kontroll on eriti soovitatav. See ei tähenda, et viga on olemas." />
           </div>
           <ul className="space-y-1">
@@ -217,17 +355,13 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
       {(analysis.possible_bodies && analysis.possible_bodies.length > 0) && (
         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3 space-y-3">
           <div className="flex items-center gap-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Võimalikud kaasatavad asutused
-            </p>
-            <Tooltip text="Õigusakti väljaandja ei ole alati sama, mis sisuline vastutaja. Näiteks töötajate puhkust reguleerib töölepingu seadus, mida administreerib Sotsiaalministeerium — aga eelnõu võib olla hoopis Rahandusministeeriumi initsiatiiv. Siin näidatud asutused on tuletatud akti lühendi, pealkirja ja märksõnade põhjal. Kontrolli tegelik vastutus EIS-ist." />
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Võimalikud kaasatavad asutused</p>
+            <Tooltip text="Õigusakti väljaandja ei ole alati sama, mis sisuline vastutaja. Siin näidatud asutused on tuletatud akti lühendi, pealkirja ja märksõnade põhjal. Kontrolli tegelik vastutus EIS-ist." />
           </div>
-
           <p className="text-[11px] text-neutral-500 leading-relaxed">
             Õigusakti väljaandja ei pruugi olla sama, mis sisuline vastutaja. Allpool toodud asutused
             on hinnanguline abivahend — kontrolli EIS-i toimikust, kes on vastutav koostaja.
           </p>
-
           <div className="flex flex-wrap gap-1.5">
             {analysis.possible_bodies.map((h) => (
               <span
@@ -248,8 +382,6 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
               </span>
             ))}
           </div>
-
-          {/* Control questions */}
           <details className="group">
             <summary className="cursor-pointer text-[11px] text-neutral-400 underline underline-offset-2 hover:text-neutral-600 list-none">
               Kontrollküsimused asutuse tuvastamiseks ↓
@@ -281,73 +413,61 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
         </div>
       )}
 
+      {/* ── Graph view ── */}
+      {viewMode === "graph" && active.length > 0 && (
+        <ImpactGraph acts={analysis.affected_acts} draftTitle={draftTitle} />
+      )}
+
       {/* ── Act cards — grouped by category ── */}
-      {active.length === 0 ? (
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
-          Ühtegi olulist seost ei tuvastatud valitud aktide ja eelnõu teksti vahel.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Category A — directly mentioned */}
-          {directActs.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                A — Otseselt seotud aktid
-              </p>
-              <div className="space-y-3">
-                {directActs.map((act) => {
-                  const i = analysis.affected_acts.indexOf(act);
-                  return (
-                    <AffectedActCard key={i} act={act} onConfirm={() => onConfirm(i)} onFlag={() => onFlag(i)} />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Category B — substantive match */}
-          {substantiveActs.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-                B — Sisuliselt seotud aktid
-              </p>
-              <div className="space-y-3">
-                {substantiveActs.map((act) => {
-                  const i = analysis.affected_acts.indexOf(act);
-                  return (
-                    <AffectedActCard key={i} act={act} onConfirm={() => onConfirm(i)} onFlag={() => onFlag(i)} />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Category C — noise, collapsed */}
-          {noiseActs.length > 0 && (
-            <details className="group">
-              <summary className="cursor-pointer list-none">
-                <div className="flex items-center gap-2 rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-                    C — Terminoloogiline müra ({noiseActs.length})
-                  </span>
-                  <span className="text-[10px] text-neutral-400">
-                    — eemaldati, kuna kattuvus on ainult üldterminite põhjal ↓
-                  </span>
+      {viewMode === "list" && (
+        active.length === 0 ? (
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+            Ühtegi olulist seost ei tuvastatud valitud aktide ja eelnõu teksti vahel.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {directActs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">A — Otseselt seotud aktid</p>
+                <div className="space-y-3">
+                  {directActs.map((act) => {
+                    const i = analysis.affected_acts.indexOf(act);
+                    return <AffectedActCard key={i} act={act} onConfirm={() => onConfirm(i)} onFlag={() => onFlag(i)} />;
+                  })}
                 </div>
-              </summary>
-              <div className="mt-1 space-y-1 rounded-md border border-neutral-100 bg-neutral-50 p-3">
-                {noiseActs.map((a, i) => (
-                  <div key={i} className="text-xs text-neutral-500">
-                    <span className="font-medium text-neutral-700">{a.act_title}</span>
-                    {a.reason_excluded && (
-                      <span className="ml-2 text-neutral-400">— {a.reason_excluded}</span>
-                    )}
-                  </div>
-                ))}
               </div>
-            </details>
-          )}
-        </div>
+            )}
+            {substantiveActs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">B — Sisuliselt seotud aktid</p>
+                <div className="space-y-3">
+                  {substantiveActs.map((act) => {
+                    const i = analysis.affected_acts.indexOf(act);
+                    return <AffectedActCard key={i} act={act} onConfirm={() => onConfirm(i)} onFlag={() => onFlag(i)} />;
+                  })}
+                </div>
+              </div>
+            )}
+            {noiseActs.length > 0 && (
+              <details className="group">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex items-center gap-2 rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">C — Terminoloogiline müra ({noiseActs.length})</span>
+                    <span className="text-[10px] text-neutral-400">— eemaldati, kuna kattuvus on ainult üldterminite põhjal ↓</span>
+                  </div>
+                </summary>
+                <div className="mt-1 space-y-1 rounded-md border border-neutral-100 bg-neutral-50 p-3">
+                  {noiseActs.map((a, i) => (
+                    <div key={i} className="text-xs text-neutral-500">
+                      <span className="font-medium text-neutral-700">{a.act_title}</span>
+                      {a.reason_excluded && <span className="ml-2 text-neutral-400">— {a.reason_excluded}</span>}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+        )
       )}
 
       {/* ── Feedback memory: auto-excluded acts ── */}
@@ -355,9 +475,7 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
         <details className="group">
           <summary className="cursor-pointer list-none">
             <div className="flex items-center justify-between rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2">
-              <span className="text-[11px] text-neutral-400">
-                {autoExcluded.length} akti välistatud varasema tagasiside põhjal ↓
-              </span>
+              <span className="text-[11px] text-neutral-400">{autoExcluded.length} akti välistatud varasema tagasiside põhjal ↓</span>
               {onClearAllExclusions && (
                 <button
                   onClick={(e) => { e.preventDefault(); onClearAllExclusions(); }}
@@ -375,17 +493,10 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
                 <div key={act.rt_identifier} className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <span className="text-xs text-neutral-600">{act.act_title}</span>
-                    {stored && (
-                      <span className="ml-2 text-[10px] text-neutral-400">
-                        välistatud {stored.count}×
-                      </span>
-                    )}
+                    {stored && <span className="ml-2 text-[10px] text-neutral-400">välistatud {stored.count}×</span>}
                   </div>
                   {onClearExclusion && (
-                    <button
-                      onClick={() => onClearExclusion(act.rt_identifier)}
-                      className="shrink-0 text-[10px] text-neutral-400 underline hover:text-neutral-700"
-                    >
+                    <button onClick={() => onClearExclusion(act.rt_identifier)} className="shrink-0 text-[10px] text-neutral-400 underline hover:text-neutral-700">
                       Taasta
                     </button>
                   )}
@@ -435,9 +546,7 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
               </>
             ) : "Genereeri mõjuanalüüsi mustand →"}
           </button>
-          {reportError && (
-            <p className="mt-2 text-center text-xs text-red-600">{reportError}</p>
-          )}
+          {reportError && <p className="mt-2 text-center text-xs text-red-600">{reportError}</p>}
         </div>
       )}
 
@@ -448,37 +557,19 @@ export function ImpactOutput({ analysis, loading, error, onConfirm, onFlag, excl
           onClick={(e) => { if (e.target === e.currentTarget) setReportText(null); }}
         >
           <div className="w-full max-w-2xl rounded-xl border border-neutral-200 bg-white shadow-2xl">
-            {/* Modal header */}
             <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
               <div>
                 <p className="font-semibold text-neutral-900">Mõjuanalüüsi mustand</p>
-                <p className="mt-0.5 text-[11px] text-neutral-400">
-                  Groq · Llama 3 · AI genereeritud — kontrolli enne ametlikku kasutamist
-                </p>
+                <p className="mt-0.5 text-[11px] text-neutral-400">Groq · Llama 3 · AI genereeritud — kontrolli enne ametlikku kasutamist</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
-                >
+                <button onClick={handleCopy} className="rounded-md border border-neutral-200 px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-50">
                   {copied ? "✓ Kopeeritud" : "Kopeeri tekst"}
                 </button>
-                <button
-                  onClick={() => setReportText(null)}
-                  className="rounded-md px-2 py-1.5 text-sm text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-                  aria-label="Sulge"
-                >
-                  ✕
-                </button>
+                <button onClick={() => setReportText(null)} className="rounded-md px-2 py-1.5 text-sm text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Sulge">✕</button>
               </div>
             </div>
-
-            {/* Rendered markdown */}
-            <div className="px-6 py-5">
-              <MarkdownReport text={reportText} />
-            </div>
-
-            {/* Footer */}
+            <div className="px-6 py-5"><MarkdownReport text={reportText} /></div>
             <div className="border-t border-neutral-100 px-6 py-3">
               <p className="text-[11px] text-neutral-400">
                 See on automaatselt genereeritud mustand. AI võib eksida — kontrolli

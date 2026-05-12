@@ -321,7 +321,7 @@ export default function App() {
             >
               rt-impact
             </a>
-            <span className="text-sm text-neutral-400">Võimaliku mõju kontroll</span>
+            <span className="text-sm text-neutral-400">80 000+ paragrahvi · sekunditega</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -538,11 +538,11 @@ export default function App() {
                 error={error}
                 onConfirm={handleConfirm}
                 onFlag={handleFlag}
-
                 excludedActs={excludedActs}
                 onClearExclusion={handleClearExclusion}
                 onClearAllExclusions={handleClearAllExclusions}
                 onGenerateReport={handleGenerateReport}
+                draftTitle={changeTitle || changeText.slice(0, 60)}
               />
             </div>
           </div>
@@ -705,11 +705,11 @@ export default function App() {
                 error={error}
                 onConfirm={handleConfirm}
                 onFlag={handleFlag}
-
                 excludedActs={excludedActs}
                 onClearExclusion={handleClearExclusion}
                 onClearAllExclusions={handleClearAllExclusions}
                 onGenerateReport={handleGenerateReport}
+                draftTitle={changeTitle || changeText.slice(0, 60)}
               />
             </div>
           </div>
