@@ -316,7 +316,7 @@ export default function App() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-baseline gap-3">
             <a
-              href="https://kadrikungla.dev"
+              href="https://localhost:5173"
               className="font-mono text-lg font-bold tracking-tight text-black hover:text-neutral-600 transition-colors"
             >
               rt-impact
@@ -333,7 +333,7 @@ export default function App() {
                   mode === "auto" ? "bg-white text-black shadow-sm" : "text-neutral-500 hover:text-neutral-700"
                 }`}
               >
-                Agentne kontroll
+                Automaatne otsing
               </button>
               <button
                 onClick={() => switchMode("advanced")}
