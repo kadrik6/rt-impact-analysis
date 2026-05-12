@@ -6,7 +6,6 @@ import { ChangeInput } from "./components/ChangeInput";
 import { AutoActFinder } from "./components/AutoActFinder";
 import { ImpactOutput } from "./components/ImpactOutput";
 import { OnboardingOverlay } from "./components/OnboardingOverlay";
-import { TesterGuide } from "./components/TesterGuide";
 import { Tooltip } from "./components/Tooltip";
 import type { ImpactAnalysis } from "./types";
 import {
@@ -93,7 +92,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
-  const [showTesterGuide, setShowTesterGuide] = useState(false);
   const lastDraftRef = useRef<string>("");
   const lastActsRef = useRef<Act[]>([]);
 
@@ -312,9 +310,6 @@ export default function App() {
       {showOnboarding && (
         <OnboardingOverlay onDismiss={dismissOnboarding} onDemo={showDemo} />
       )}
-      {showTesterGuide && (
-        <TesterGuide onClose={() => setShowTesterGuide(false)} />
-      )}
 
       {/* Header */}
       <header className="border-b border-neutral-200 bg-white px-6 py-3">
@@ -376,12 +371,6 @@ export default function App() {
               ))}
             </div>
 
-            <button
-              onClick={() => setShowTesterGuide(true)}
-              className="rounded border border-neutral-200 bg-neutral-900 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-neutral-700"
-            >
-              Testijale
-            </button>
             <button
               onClick={() => setShowOnboarding(true)}
               className="rounded border border-neutral-200 px-2 py-1 text-[11px] text-neutral-500 hover:bg-neutral-50"

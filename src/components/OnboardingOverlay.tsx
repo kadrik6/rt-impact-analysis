@@ -6,18 +6,21 @@ interface Props {
 }
 
 const IMPACT_TYPES = [
-  "Õigused ja kohustused",
-  "Tähtajad",
-  "Menetlus",
-  "Andmed ja registrid",
-  "Järelevalve",
-  "Rahaline mõju",
-  "Asutuse töökorraldus",
-  "Kohaliku omavalitsuse ülesanded",
+  "Õigused ja kohustused", "Tähtajad", "Menetlus", "Andmed ja registrid",
+  "Järelevalve", "Rahaline mõju", "Asutuse töökorraldus", "KOV ülesanded",
+];
+
+type Tab = "workflow" | "input" | "results" | "feedback";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "workflow", label: "Töövoog" },
+  { id: "input",    label: "Mida sisestada?" },
+  { id: "results",  label: "Tulemused" },
+  { id: "feedback", label: "Tagasiside" },
 ];
 
 export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
-  const [tab, setTab] = useState<"what" | "input" | "results">("what");
+  const [tab, setTab] = useState<Tab>("workflow");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
@@ -29,24 +32,22 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
           <p className="mt-1 text-sm font-medium text-neutral-500">
             Analüüsi eelnõusid 80 000+ paragrahvi vastu sekunditega, mitte tundidega.
           </p>
-          <p className="mt-2 text-xs text-neutral-400">
-            Kirjelda kavandatavat muudatust — süsteem tuvastab mõjutatud aktid, vastutavad
-            ministeeriumid ja konkreetsed paragrahvid automaatselt.
+          <p className="mt-2 text-xs text-neutral-400 leading-relaxed">
+            Kirjelda kavandatavat muudatust — süsteem tuvastab mõjutatud aktid,
+            vastutavad ministeeriumid ja konkreetsed paragrahvid automaatselt.
           </p>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-neutral-100">
-          {([
-            ["what", "Kuidas töötab?"],
-            ["input", "Mida sisestada?"],
-            ["results", "Mida tulemus tähendab?"],
-          ] as const).map(([id, label]) => (
+          {TABS.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
-                tab === id ? "border-b-2 border-black text-black" : "text-neutral-500 hover:text-neutral-700"
+              className={`flex-1 px-2 py-2.5 text-xs font-medium transition-colors ${
+                tab === id
+                  ? "border-b-2 border-black text-black"
+                  : "text-neutral-500 hover:text-neutral-700"
               }`}
             >
               {label}
@@ -55,45 +56,50 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5 text-sm">
+        <div className="px-6 py-5 text-sm" style={{ minHeight: "260px" }}>
 
-          {tab === "what" && (
+          {/* ── Töövoog ── */}
+          {tab === "workflow" && (
             <div className="space-y-4">
               <div className="rounded-md bg-neutral-50 p-4">
-                <p className="font-medium text-neutral-800">Vaikimisi töövoog</p>
-                <ol className="mt-2 space-y-2 text-neutral-600 text-xs">
-                  <li className="flex gap-2">
-                    <span className="font-mono font-bold text-neutral-400">1.</span>
-                    <span><strong>Lisa muudatus</strong> — kirjuta või lae üles eelnõu, muudatusettepanek või seletuskirja lõik</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-mono font-bold text-neutral-400">2.</span>
-                    <span><strong>Süsteem leiab kandidaataktid</strong> — kontrollib kataloogi ja valib automaatselt tõenäoliselt seotud aktid</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="font-mono font-bold text-neutral-400">3.</span>
-                    <span><strong>Kontrolli tulemused üle</strong> — vaata kriitiliselt, mis on oluline ja mis mitte</span>
-                  </li>
+                <p className="font-medium text-neutral-800">Kolm sammu</p>
+                <ol className="mt-2 space-y-2 text-xs text-neutral-600">
+                  {[
+                    ["Lisa muudatus", "kirjuta eelnõu, muudatusettepanek või seletuskirja lõik"],
+                    ["Süsteem leiab kandidaataktid", "kontrollib 80 000+ paragrahvi ja valib automaatselt seotud aktid"],
+                    ["Kontrolli tulemused", "vaata kriitiliselt, mis on oluline ja mis mitte — kinnita või tõrjesta"],
+                  ].map(([bold, rest], i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="font-mono font-bold text-neutral-400 shrink-0">{i + 1}.</span>
+                      <span><strong>{bold}</strong> — {rest}</span>
+                    </li>
+                  ))}
                 </ol>
               </div>
 
               <div className="rounded-md border border-neutral-200 p-3 text-xs text-neutral-600">
-                <p className="font-medium mb-1.5">Kaks töörežiimi:</p>
+                <p className="font-medium mb-2">Kaks töörežiimi:</p>
                 <div className="space-y-2">
                   <div>
                     <span className="font-medium text-neutral-800">Automaatne otsing</span>
                     <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500">vaikimisi</span>
-                    <p className="mt-0.5 text-neutral-500">Lisa muudatus, tööriist leiab ise kandidaataktid.</p>
+                    <p className="mt-0.5 text-neutral-500">Lisa muudatus — tööriist leiab ise kandidaataktid semantilise otsingu abil.</p>
                   </div>
                   <div>
                     <span className="font-medium text-neutral-800">Käsitsi valimine</span>
-                    <p className="mt-0.5 text-neutral-500">Vali ise konkreetne kehtiv akt ja võrdle seda muudatusega.</p>
+                    <p className="mt-0.5 text-neutral-500">Vali konkreetne kehtiv akt ja võrdle seda muudatusega.</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-500 space-y-1.5">
+                <p className="font-medium text-neutral-600">Miks see ei hallutsineerida?</p>
+                <p>Erinevalt tavalisest AI-st otsib süsteem vastused <strong className="text-neutral-700">reaalsest Riigi Teataja andmebaasist</strong>, mitte oma mälust. Iga viide on pärit konkreetsest paragrahvist — mitte genereeritud.</p>
               </div>
             </div>
           )}
 
+          {/* ── Mida sisestada? ── */}
           {tab === "input" && (
             <div className="space-y-4">
               <div>
@@ -109,7 +115,7 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
                     "Seletuskirja mõju analüüsi lõik",
                   ].map((s, i) => (
                     <li key={i} className="flex gap-2 text-xs text-neutral-700">
-                      <span className="text-green-500 shrink-0">✓</span> {s}
+                      <span className="text-green-500 shrink-0">✓</span>{s}
                     </li>
                   ))}
                 </ul>
@@ -123,7 +129,7 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
                     "Vähendame bürokraatiat.",
                   ].map((s, i) => (
                     <li key={i} className="flex gap-2 text-xs text-neutral-500">
-                      <span className="shrink-0">✗</span> {s}
+                      <span className="shrink-0">✗</span>{s}
                     </li>
                   ))}
                 </ul>
@@ -131,34 +137,75 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
             </div>
           )}
 
+          {/* ── Tulemused ── */}
           {tab === "results" && (
             <div className="space-y-3">
               <p className="text-xs text-neutral-600 leading-relaxed">
                 Tulemus näitab tekstilist kattuvust — mitte kindlat vastuolu. Lõpliku hinnangu
                 peab andma inimene.
               </p>
-              <div className="space-y-2">
+
+              <div className="space-y-1.5">
                 {[
-                  { label: "Seotud", color: "bg-green-100 text-green-700", desc: "Tugev märksõnakattuvus — tõenäoliselt seotud teemaga." },
-                  { label: "Võib olla seotud", color: "bg-neutral-100 text-neutral-600", desc: "Osaline kattuvus — vajab ülevaatust." },
-                  { label: "Ebaoluline", color: "bg-neutral-50 text-neutral-400 border border-neutral-200", desc: "Kasutaja on märkinud seose ebaoluliseks." },
+                  { label: "A — Otseselt muudetav", color: "bg-neutral-800 text-white",                   desc: "Eelnõu pealkiri nimetab seda akti otseselt." },
+                  { label: "B — Sisuliselt seotud",  color: "bg-neutral-100 text-neutral-700",             desc: "Semantiline kattuvus märksõnade ja paragrahvidega." },
+                  { label: "Kõrge seos",             color: "bg-orange-50 text-orange-700 border border-orange-200", desc: "Palju kattuvaid termineid — sisuline kontroll soovitatav." },
+                  { label: "Ebaoluline",             color: "bg-neutral-50 text-neutral-400 border border-neutral-200", desc: "Kasutaja on märkinud seose ebaoluliseks." },
                 ].map((level) => (
                   <div key={level.label} className="flex items-start gap-2">
                     <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-medium ${level.color}`}>{level.label}</span>
-                    <span className="text-xs text-neutral-600">{level.desc}</span>
+                    <span className="text-xs text-neutral-600 pt-0.5">{level.desc}</span>
                   </div>
                 ))}
               </div>
+
               <div className="rounded-md border border-neutral-100 bg-neutral-50 p-3 text-xs">
                 <p className="font-medium text-neutral-600 mb-1.5">Võimalikud mõju tüübid:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {IMPACT_TYPES.map((t) => (
-                    <span key={t} className="rounded bg-white border border-neutral-200 px-2 py-0.5 text-[11px] text-neutral-500">{t}</span>
+                    <span key={t} className="rounded border border-neutral-200 bg-white px-2 py-0.5 text-[11px] text-neutral-500">{t}</span>
                   ))}
                 </div>
               </div>
             </div>
           )}
+
+          {/* ── Tagasiside ── */}
+          {tab === "feedback" && (
+            <div className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  { label: "Täpsus",              text: "Kas süsteem leidis seadused, mida eeldasid? Kas oli asjakohatu \"müra\"?" },
+                  { label: "Argumentatsioon",     text: "Vali \"Miks see leiti?\". Kas AI põhjendus on juriidiliselt loogiline?" },
+                  { label: "Mustandi kvaliteet",  text: "Kas genereeritud seletuskirja tekst on piisavalt hea väikese toimetamisega?" },
+                  { label: "Usaldus",             text: "Kas RT-viited ja paragrahvilingid aitavad kontrolli kiiremini läbi viia?" },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-md border border-neutral-200 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{item.label}</p>
+                    <p className="mt-1 text-xs text-neutral-600 leading-relaxed">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-md bg-neutral-900 px-4 py-3.5 text-white">
+                <p className="text-xs font-semibold">30 sekundi reegel</p>
+                <p className="mt-1 text-[11px] text-neutral-300 leading-relaxed">
+                  Süsteem on loodud nii, et jurist saaks iga AI väidet kontrollida alla 30 sekundiga.
+                  Mitte see, et AI on tark — vaid see, et AI on <span className="text-white font-medium">kontrollitav</span>.
+                </p>
+              </div>
+
+              <div className="text-xs text-neutral-500 space-y-1">
+                <p className="font-medium text-neutral-600">Abivahendid ülevaatuseks:</p>
+                <ul className="space-y-0.5">
+                  <li><span className="font-medium text-neutral-700">Mõtlemise logi</span> — näed reaalajas, milliseid paragrahve agent analüüsib</li>
+                  <li><span className="font-medium text-neutral-700">Kinnitusring</span> — märgi seosed oluliseks/ebaoluliseks; süsteem mäletab valikuid</li>
+                  <li><span className="font-medium text-neutral-700">Mustandi kopeerimine</span> — seletuskirja tekst on kopeeritav otse Wordi</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}
@@ -176,6 +223,7 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
             Alusta →
           </button>
         </div>
+
       </div>
     </div>
   );
