@@ -316,7 +316,7 @@ export default function App() {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-baseline gap-3">
             <a
-              href="https://localhost:5173"
+              href="https://rt-impact-analysis.vercel.app/"
               className="font-mono text-lg font-bold tracking-tight text-black hover:text-neutral-600 transition-colors"
             >
               rt-impact
