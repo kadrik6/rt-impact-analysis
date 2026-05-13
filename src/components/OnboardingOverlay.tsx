@@ -10,13 +10,14 @@ const IMPACT_TYPES = [
   "Järelevalve", "Rahaline mõju", "Asutuse töökorraldus", "KOV ülesanded",
 ];
 
-type Tab = "workflow" | "input" | "results" | "feedback";
+type Tab = "workflow" | "input" | "results" | "feedback" | "arch";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "workflow", label: "Töövoog" },
   { id: "input",    label: "Mida sisestada?" },
   { id: "results",  label: "Tulemused" },
   { id: "feedback", label: "Tagasiside" },
+  { id: "arch",     label: "Kuidas töötab?" },
 ];
 
 export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
@@ -203,6 +204,72 @@ export function OnboardingOverlay({ onDismiss, onDemo }: Props) {
                   <li><span className="font-medium text-neutral-700">Mustandi kopeerimine</span> — seletuskirja tekst on kopeeritav otse Wordi</li>
                 </ul>
               </div>
+            </div>
+          )}
+
+          {/* ── Kuidas töötab? ── */}
+          {tab === "arch" && (
+            <div className="space-y-3">
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Süsteem kasutab kolmeastmelist RAG-torustikku — vastused tulenevad reaalsest andmebaasist, mitte mudeli mälust.
+              </p>
+
+              {/* Stage 1 */}
+              <div className="rounded-md border border-neutral-200 p-3 text-xs">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="font-mono font-bold text-neutral-300">01</span>
+                  <span className="font-semibold text-neutral-800">Semantiline RAG</span>
+                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500">pgvector</span>
+                </div>
+                <p className="text-neutral-600 leading-relaxed">
+                  Eelnõu tekst vektoriseeritakse mitmekeelse lausemudeliga ja võrreldakse kosinussarnasuse abil
+                  Supabase pgvectoris olevate <strong className="text-neutral-700">80 000+ seaduseparagrahviga</strong>.
+                  Süsteem ei otsi märksõnu — ta mõistab sisu.
+                </p>
+              </div>
+
+              {/* Stage 2 */}
+              <div className="rounded-md border border-orange-200 bg-orange-50 p-3 text-xs">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="font-mono font-bold text-orange-300">02</span>
+                  <span className="font-semibold text-neutral-800">Agentne tsükkel</span>
+                  <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] text-orange-700 font-medium">Tool Calling</span>
+                </div>
+                <p className="text-neutral-600 leading-relaxed mb-2">
+                  Groq Llama 3.3-70b mudel saab eelnõu ja kandidaataktid koos kahe tööriistaga:
+                </p>
+                <div className="space-y-1.5 mb-2">
+                  <div className="flex gap-2 rounded bg-white border border-orange-100 px-2.5 py-1.5">
+                    <code className="shrink-0 text-[11px] font-mono font-semibold text-orange-700">get_law_details</code>
+                    <span className="text-neutral-500">— otsib Supabase'ist paragrahvi täisteksti reaalajas</span>
+                  </div>
+                  <div className="flex gap-2 rounded bg-white border border-orange-100 px-2.5 py-1.5">
+                    <code className="shrink-0 text-[11px] font-mono font-semibold text-orange-700">report_findings</code>
+                    <span className="text-neutral-500">— struktureeritud lõppvastus: aktid, paragrahvid, põhjendused</span>
+                  </div>
+                </div>
+                <p className="text-neutral-600 leading-relaxed">
+                  <code className="rounded bg-orange-100 px-1 text-[11px] font-mono text-orange-800">tool_choice: "required"</code>{" "}
+                  väldib lihttekstiga vastamist — mudel <strong className="text-neutral-700">peab alati tööriista kasutama</strong>.
+                  Tsükkel jätkub kuni <code className="rounded bg-orange-100 px-1 text-[11px] font-mono text-orange-800">report_findings</code> on kutsutud.
+                </p>
+              </div>
+
+              {/* Stage 3 */}
+              <div className="rounded-md border border-neutral-200 p-3 text-xs">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="font-mono font-bold text-neutral-300">03</span>
+                  <span className="font-semibold text-neutral-800">Aruande genereerimine</span>
+                </div>
+                <p className="text-neutral-600 leading-relaxed">
+                  Teine Groq kutse (ilma tööriistatsüklita) võtab kinnitatud mõjutatud aktid ja kirjutab
+                  5-jaotisega seletuskirja peatüki: õiguskord, eelarve, halduskoormus, sihtrühmad, proportsionaalsus.
+                </p>
+              </div>
+
+              <p className="text-[11px] text-neutral-400 leading-relaxed pt-1">
+                Iga viide on pärit konkreetsest andmebaasireast — mitte mudeli poolt genereeritud. Seetõttu on iga väide kontrollitav alla 30 sekundiga.
+              </p>
             </div>
           )}
 
